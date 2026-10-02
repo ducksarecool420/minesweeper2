@@ -1,318 +1,251 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Minesweeper Blubd</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Minesweeper Squared</title>
 
-    <script src="https://cdn.jsdelivr.net/npm/tailwindcss-cdn@3.4.10/tailwindcss.js"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/tailwindcss-cdn@3.4.10/tailwindcss.js"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
 
-    <style>
-        :root {
-            --bg-main: #0b0f19;
-            --panel-bg: #111827;
-            --tile-closed: #162235;
-            --tile-border: transparent;
-            --tile-open: #0d131f;
-            --text-main: #f8fafc;
-            --radius-main: 16px;
-            --radius-tile: 8px;
-            --font-main: system-ui, -apple-system, sans-serif;
-        }
+<style>
+:root {
+    --bg-main:#0b0f19;
+    --panel-bg:#111827;
+    --tile-closed:#162235;
+    --tile-border:transparent;
+    --tile-open:#0d131f;
+    --text-main:#f8fafc;
+    --radius-main:16px;
+    --radius-tile:8px;
+    --font-main:system-ui,-apple-system,sans-serif;
+}
 
-        .classic-theme {
-            --bg-main: #4a4a4a;
-            --panel-bg: #bdbdbd;
-            --tile-closed: #bdbdbd;
-            --tile-border: #7b7b7b;
-            --tile-open: #bdbdbd;
-            --text-main: #000000;
-            --radius-main: 0px;
-            --radius-tile: 0px;
-            --font-main: "Courier New", Courier, monospace;
-        }
+.classic-theme {
+    --bg-main:#4a4a4a;
+    --panel-bg:#bdbdbd;
+    --tile-closed:#bdbdbd;
+    --tile-border:#7b7b7b;
+    --tile-open:#bdbdbd;
+    --text-main:#000;
+    --radius-main:0;
+    --radius-tile:0;
+    --font-main:"Courier New",Courier,monospace;
+}
 
-        * {
-            box-sizing: border-box;
-        }
+* {
+    box-sizing:border-box;
+}
 
-        body {
-            background-color: var(--bg-main);
-            color: var(--text-main);
-            font-family: var(--font-main);
-            transition: background-color 0.2s ease;
-            overflow-x: hidden;
-        }
+body {
+    background:var(--bg-main);
+    color:var(--text-main);
+    font-family:var(--font-main);
+    transition:background-color .2s ease;
+    overflow-x:hidden;
+}
 
-        .app-window {
-            background-color: var(--panel-bg);
-            border-radius: var(--radius-main);
-            border: 1px solid rgba(255,255,255,0.05);
-            width: max-content;
-            max-width: 100%;
-            transform-origin: center;
-        }
+.app-window {
+    background:var(--panel-bg);
+    border-radius:var(--radius-main);
+    border:1px solid rgba(255,255,255,.05);
+    width:max-content;
+    max-width:100%;
+    transform-origin:center;
+}
 
-        /* =========================
-           SCREEN SHAKE
-        ========================= */
+.screen-shake {
+    animation:screenShake .13s ease-out;
+}
 
-        .screen-shake {
-            animation: screenShake 0.13s ease-out;
-        }
+.screen-shake-heavy {
+    animation:screenShakeHeavy .22s ease-out;
+}
 
-        .screen-shake-heavy {
-            animation: screenShakeHeavy 0.22s ease-out;
-        }
+@keyframes screenShake {
+    0%{transform:translate(0,0)}
+    20%{transform:translate(-2px,1px)}
+    40%{transform:translate(2px,-1px)}
+    60%{transform:translate(-1px,-1px)}
+    80%{transform:translate(1px,1px)}
+    100%{transform:translate(0,0)}
+}
 
-        @keyframes screenShake {
-            0%   { transform: translate(0,0); }
-            20%  { transform: translate(-2px,1px); }
-            40%  { transform: translate(2px,-1px); }
-            60%  { transform: translate(-1px,-1px); }
-            80%  { transform: translate(1px,1px); }
-            100% { transform: translate(0,0); }
-        }
+@keyframes screenShakeHeavy {
+    0%{transform:translate(0,0) rotate(0)}
+    15%{transform:translate(-4px,2px) rotate(-.3deg)}
+    30%{transform:translate(4px,-2px) rotate(.3deg)}
+    45%{transform:translate(-3px,-2px) rotate(-.2deg)}
+    60%{transform:translate(3px,2px) rotate(.2deg)}
+    75%{transform:translate(-1px,-1px)}
+    100%{transform:translate(0,0) rotate(0)}
+}
 
-        @keyframes screenShakeHeavy {
-            0%   { transform: translate(0,0) rotate(0deg); }
-            15%  { transform: translate(-4px,2px) rotate(-0.3deg); }
-            30%  { transform: translate(4px,-2px) rotate(0.3deg); }
-            45%  { transform: translate(-3px,-2px) rotate(-0.2deg); }
-            60%  { transform: translate(3px,2px) rotate(0.2deg); }
-            75%  { transform: translate(-1px,-1px); }
-            100% { transform: translate(0,0); }
-        }
+.game-tile {
+    width:var(--tileSize,36px);
+    height:var(--tileSize,36px);
+    background:var(--tile-closed);
+    border:1.5px solid var(--tile-border);
+    border-radius:var(--radius-tile);
+    transition:
+        background-color .15s ease,
+        transform .12s ease,
+        box-shadow .15s ease;
+    user-select:none;
+    flex-shrink:0;
+    font-size:calc(var(--tileSize,36px)*.45);
+    position:relative;
+    overflow:visible;
+}
 
-        /* =========================
-           TILES
-        ========================= */
+.game-tile:hover:not(.revealed) {
+    background:#1d2d47;
+    transform:scale(1.035);
+}
 
-        .game-tile {
-            width: var(--tileSize, 36px);
-            height: var(--tileSize, 36px);
-            background-color: var(--tile-closed);
-            border: 1.5px solid var(--tile-border);
-            border-radius: var(--radius-tile);
-            transition:
-                background-color 0.15s ease,
-                transform 0.12s ease,
-                box-shadow 0.15s ease;
-            user-select: none;
-            flex-shrink: 0;
-            font-size: calc(var(--tileSize, 36px) * 0.45);
-            position: relative;
-            overflow: visible;
-        }
+.game-tile.revealed {
+    background:var(--tile-open);
+    border-color:rgba(255,255,255,.02);
+    animation:tileReveal .18s cubic-bezier(.2,.8,.3,1);
+}
 
-        .game-tile:hover:not(.revealed) {
-            background-color: #1d2d47;
-            transform: scale(1.035);
-        }
+@keyframes tileReveal {
+    0% {
+        transform:scale(.72);
+        opacity:.25;
+        filter:brightness(1.8);
+    }
+    55% {
+        transform:scale(1.08);
+        opacity:1;
+        filter:brightness(1.35);
+    }
+    100% {
+        transform:scale(1);
+        opacity:1;
+        filter:brightness(1);
+    }
+}
 
-        .game-tile.revealed {
-            background-color: var(--tile-open);
-            border-color: rgba(255,255,255,0.02);
-            animation: tileReveal 0.18s cubic-bezier(.2,.8,.3,1);
-        }
+.tile-pop {
+    animation:tilePop .22s cubic-bezier(.2,1.5,.4,1);
+}
 
-        @keyframes tileReveal {
-            0% {
-                transform: scale(0.72);
-                opacity: 0.25;
-                filter: brightness(1.8);
-            }
+@keyframes tilePop {
+    0%{transform:scale(.8)}
+    65%{transform:scale(1.12)}
+    100%{transform:scale(1)}
+}
 
-            55% {
-                transform: scale(1.08);
-                opacity: 1;
-                filter: brightness(1.35);
-            }
+.classic-theme .game-tile:not(.revealed) {
+    border:2.5px solid;
+    border-color:#fff #4a4a4a #4a4a4a #fff;
+}
 
-            100% {
-                transform: scale(1);
-                opacity: 1;
-                filter: brightness(1);
-            }
-        }
+.classic-theme .game-tile.revealed {
+    border:1px solid #7b7b7b;
+}
 
-        .tile-pop {
-            animation: tilePop 0.22s cubic-bezier(.2,1.5,.4,1);
-        }
+#particleLayer {
+    position:fixed;
+    inset:0;
+    pointer-events:none;
+    overflow:hidden;
+    z-index:99999;
+}
 
-        @keyframes tilePop {
-            0% { transform: scale(0.8); }
-            65% { transform: scale(1.12); }
-            100% { transform: scale(1); }
-        }
+.particle {
+    position:fixed;
+    width:5px;
+    height:5px;
+    border-radius:50%;
+    pointer-events:none;
+    will-change:transform,opacity;
+    animation:
+        particleFly
+        var(--particle-duration,550ms)
+        cubic-bezier(.15,.75,.35,1)
+        forwards;
+}
 
-        .classic-theme .game-tile:not(.revealed) {
-            border: 2.5px solid;
-            border-color: #fff #4a4a4a #4a4a4a #fff;
-        }
+.particle.square {
+    border-radius:1px;
+}
 
-        .classic-theme .game-tile.revealed {
-            border: 1px solid #7b7b7b;
-        }
+@keyframes particleFly {
+    0% {
+        opacity:1;
+        transform:
+            translate3d(0,0,0)
+            scale(1)
+            rotate(0);
+    }
+    65% {
+        opacity:.9;
+    }
+    100% {
+        opacity:0;
+        transform:
+            translate3d(var(--dx),var(--dy),0)
+            scale(.05)
+            rotate(var(--rotation));
+    }
+}
 
-        /* =========================
-           NUMBERS
-        ========================= */
+.tile-burst-ring {
+    position:fixed;
+    width:8px;
+    height:8px;
+    border:2px solid rgba(96,165,250,.8);
+    border-radius:50%;
+    pointer-events:none;
+    z-index:99998;
+    animation:burstRing .4s ease-out forwards;
+}
 
-        .count-1 { color: #3b82f6; font-weight: 800; }
-        .count-2 { color: #10b981; font-weight: 800; }
-        .count-3 { color: #f59e0b; font-weight: 800; }
-        .count-4 { color: #818cf8; font-weight: 800; }
-        .count-5 { color: #f43f5e; font-weight: 800; }
-        .count-6 { color: #2dd4bf; font-weight: 800; }
-        .count-7 { color: #ec4899; font-weight: 800; }
-        .count-8 { color: #a855f7; font-weight: 800; }
+@keyframes burstRing {
+    from {
+        opacity:.9;
+        transform:translate(-50%,-50%) scale(.4);
+    }
+    to {
+        opacity:0;
+        transform:translate(-50%,-50%) scale(4);
+    }
+}
 
-        .count-boss {
-            color: #ef4444;
-            font-weight: 900;
-            animation: flashRed 1.5s infinite;
-        }
+.flag-glow {
+    animation:flagGlow .45s ease-out;
+}
 
-        @keyframes flashRed {
-            0%,100% {
-                color: #ef4444;
-                transform: scale(1);
-            }
+@keyframes flagGlow {
+    0% {
+        box-shadow:
+            0 0 0 rgba(239,68,68,0),
+            inset 0 0 0 rgba(239,68,68,0);
+    }
+    35% {
+        box-shadow:
+            0 0 20px rgba(239,68,68,.8),
+            inset 0 0 12px rgba(239,68,68,.35);
+    }
+    100% {
+        box-shadow:
+            0 0 0 rgba(239,68,68,0),
+            inset 0 0 0 rgba(239,68,68,0);
+    }
+}
 
-            50% {
-                color: #f43f5e;
-                transform: scale(1.05);
-            }
-        }
-
-        .classic-theme .count-1,
-        .classic-theme .count-2,
-        .classic-theme .count-3,
-        .classic-theme .count-4,
-        .classic-theme .count-5,
-        .classic-theme .count-6 {
-            color: #000000 !important;
-        }
-
-        /* =========================
-           PARTICLES
-        ========================= */
-
-        #particleLayer {
-            position: fixed;
-            inset: 0;
-            pointer-events: none;
-            overflow: hidden;
-            z-index: 99999;
-        }
-
-        .particle {
-            position: fixed;
-            width: 5px;
-            height: 5px;
-            border-radius: 50%;
-            pointer-events: none;
-            will-change: transform, opacity;
-            animation:
-                particleFly
-                var(--particle-duration, 550ms)
-                cubic-bezier(.15,.75,.35,1)
-                forwards;
-        }
-
-        .particle.square {
-            border-radius: 1px;
-        }
-
-        @keyframes particleFly {
-            0% {
-                opacity: 1;
-                transform:
-                    translate3d(0,0,0)
-                    scale(1)
-                    rotate(0deg);
-            }
-
-            65% {
-                opacity: 0.9;
-            }
-
-            100% {
-                opacity: 0;
-                transform:
-                    translate3d(var(--dx),var(--dy),0)
-                    scale(0.05)
-                    rotate(var(--rotation));
-            }
-        }
-
-        .tile-burst-ring {
-            position: fixed;
-            width: 8px;
-            height: 8px;
-            border: 2px solid rgba(96,165,250,0.8);
-            border-radius: 50%;
-            pointer-events: none;
-            z-index: 99998;
-            animation: burstRing 0.4s ease-out forwards;
-        }
-
-        @keyframes burstRing {
-            from {
-                opacity: 0.9;
-                transform:
-                    translate(-50%,-50%)
-                    scale(0.4);
-            }
-
-            to {
-                opacity: 0;
-                transform:
-                    translate(-50%,-50%)
-                    scale(4);
-            }
-        }
-
-        .flag-glow {
-            animation: flagGlow 0.45s ease-out;
-        }
-
-        @keyframes flagGlow {
-            0% {
-                box-shadow:
-                    0 0 0 rgba(239,68,68,0),
-                    inset 0 0 0 rgba(239,68,68,0);
-            }
-
-            35% {
-                box-shadow:
-                    0 0 20px rgba(239,68,68,0.8),
-                    inset 0 0 12px rgba(239,68,68,0.35);
-            }
-
-            100% {
-                box-shadow:
-                    0 0 0 rgba(239,68,68,0),
-                    inset 0 0 0 rgba(239,68,68,0);
-            }
-        }
-
-        /* =========================
-           CLASSIC CONTROLS
-        ========================= */
-
-        .classic-theme input,
-        .classic-theme select,
-        .classic-theme button {
-            border: 2px solid;
-            border-color: #fff #7b7b7b #7b7b7b #fff;
-            background: #bdbdbd !important;
-            color: #000 !important;
-            border-radius: 0px !important;
-        }
-    </style>
+.classic-theme input,
+.classic-theme select,
+.classic-theme button {
+    border:2px solid;
+    border-color:#fff #7b7b7b #7b7b7b #fff;
+    background:#bdbdbd !important;
+    color:#000 !important;
+    border-radius:0 !important;
+}
+</style>
 </head>
 
 <body class="flex flex-col items-center justify-center min-h-screen p-2 sm:p-4">
@@ -327,7 +260,6 @@
             onclick="resetEngine()"
             class="absolute top-3 right-3 bg-slate-800/80 hover:bg-slate-700 text-white rounded-full p-2 transition border border-white/10 z-10"
             title="Reset Field">
-
             <i data-lucide="refresh-cw" class="w-4 h-4"></i>
         </button>
 
@@ -337,17 +269,12 @@
     <div class="grid grid-cols-4 text-center border-b border-white/10 pb-3 mb-3 text-[11px] font-medium tracking-wide text-slate-400">
 
         <div>
-            <div
-                class="text-xs font-bold text-sky-400 mb-1"
-                id="minesTxt">
-                25
-            </div>
+            <div class="text-xs font-bold text-sky-400 mb-1" id="minesTxt">25</div>
             Mines Left
         </div>
 
         <div>
-            <div class="text-xs font-bold text-pink-400 mb-1 flex items-center justify-center gap-1">
-                <span>👑</span>
+            <div class="text-xs font-bold text-pink-400 mb-1">
                 <span id="bossTally">9</span>
             </div>
             Boss Tile
@@ -361,9 +288,7 @@
         </div>
 
         <div>
-            <div
-                class="text-xs font-bold text-emerald-400 mb-1"
-                id="progTxt">
+            <div class="text-xs font-bold text-emerald-400 mb-1" id="progTxt">
                 0%
             </div>
             Cleared
@@ -376,7 +301,6 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-semibold">
 
             <div>
-
                 <label class="block text-slate-400 text-[11px] mb-1.5">
                     Difficulty & Grid Size
                 </label>
@@ -386,28 +310,15 @@
                     onchange="onDiffChange()"
                     class="w-full bg-slate-900 border border-slate-700/80 text-white px-3 py-2 rounded-xl outline-none cursor-pointer">
 
-                    <option value="beginner">
-                        Beginner 9x9 (25 mines)
-                    </option>
-
-                    <option value="intermediate">
-                        Intermediate 16x16 (100 mines)
-                    </option>
-
-                    <option value="expert">
-                        Expert 30x16 (250 mines)
-                    </option>
-
-                    <option value="custom">
-                        Custom Configuration...
-                    </option>
+                    <option value="beginner">Beginner 9x9 (25 mines)</option>
+                    <option value="intermediate">Intermediate 16x16 (100 mines)</option>
+                    <option value="expert">Expert 30x16 (250 mines)</option>
+                    <option value="custom">Custom Configuration...</option>
 
                 </select>
-
             </div>
 
             <div>
-
                 <label class="block text-slate-400 text-[11px] mb-1.5">
                     Theme
                 </label>
@@ -417,16 +328,10 @@
                     onchange="switchTheme()"
                     class="w-full bg-slate-900 border border-slate-700/80 text-white px-3 py-2 rounded-xl outline-none cursor-pointer">
 
-                    <option value="modern">
-                        Modern Theme
-                    </option>
-
-                    <option value="classic">
-                        Classic Retro Theme
-                    </option>
+                    <option value="modern">Modern Theme</option>
+                    <option value="classic">Classic Retro Theme</option>
 
                 </select>
-
             </div>
 
         </div>
@@ -436,53 +341,27 @@
             class="hidden flex-wrap gap-2 items-center justify-between p-2.5 bg-black/30 rounded-xl border border-white/5 text-xs">
 
             <label class="font-semibold text-slate-400">
-
                 W:
-
-                <input
-                    type="number"
-                    id="inpW"
-                    value="10"
-                    min="5"
-                    max="35"
+                <input id="inpW" type="number" value="10" min="5" max="35"
                     class="bg-slate-900 text-white rounded-lg p-1 w-12 text-center border border-slate-700">
-
             </label>
 
             <label class="font-semibold text-slate-400">
-
                 H:
-
-                <input
-                    type="number"
-                    id="inpH"
-                    value="10"
-                    min="5"
-                    max="35"
+                <input id="inpH" type="number" value="10" min="5" max="35"
                     class="bg-slate-900 text-white rounded-lg p-1 w-12 text-center border border-slate-700">
-
             </label>
 
             <label class="font-semibold text-slate-400">
-
                 Mines:
-
-                <input
-                    type="number"
-                    id="inpM"
-                    value="30"
-                    min="1"
-                    max="300"
+                <input id="inpM" type="number" value="30" min="1" max="300"
                     class="bg-slate-900 text-white rounded-lg p-1 w-14 text-center border border-slate-700">
-
             </label>
 
             <button
                 onclick="resetEngine()"
                 class="bg-blue-600 hover:bg-blue-500 font-bold text-white px-3 py-1 rounded-lg text-xs">
-
                 Apply
-
             </button>
 
         </div>
@@ -499,22 +378,17 @@
                     id="toolDig"
                     onclick="setActiveTool('dig')"
                     class="px-3 py-1.5 rounded-md font-bold text-xs bg-blue-600 text-white transition-all">
-
                     Dig
-
                 </button>
 
                 <button
                     id="toolFlag"
                     onclick="setActiveTool('flag')"
                     class="px-3 py-1.5 rounded-md font-bold text-xs text-slate-400 hover:text-white transition-all">
-
                     Flag (1-3)
-
                 </button>
 
             </div>
-
         </div>
 
         <div class="text-[10px] text-slate-500 leading-relaxed border-t border-white/5 pt-2">
@@ -523,7 +397,7 @@
                 Win condition:
             </span>
 
-            Reveal all numbers AND place matching flags on all mines!
+            Reveal all safe tiles AND place matching flags on all mines!
 
             <span class="text-indigo-400 font-semibold ml-1">
                 Boss Tiles: 9+ Mines
@@ -532,845 +406,1196 @@
         </div>
 
     </div>
-
 </div>
 
 <script>
 
-    /* ==========================================
-       CELL
-    ========================================== */
+/* =========================================================
+   AUDIO ENGINE
+   ========================================================= */
 
-    class Cell {
+let audioCtx = null;
 
-        constructor(r, c) {
+function initAudio() {
 
-            this.row = r;
-            this.col = c;
+    if(!audioCtx) {
 
-            this.mines = 0;
+        const AudioContext =
+            window.AudioContext ||
+            window.webkitAudioContext;
 
-            this.uncovered = false;
+        if(!AudioContext)
+            return;
 
-            this.flaggedLayers = 0;
-        }
+        audioCtx = new AudioContext();
     }
 
+    if(audioCtx.state === "suspended")
+        audioCtx.resume();
+}
 
-    /* ==========================================
-       GAME STATE
-    ========================================== */
+function tone(
+    frequency,
+    duration,
+    volume = 0.06,
+    type = "sine",
+    slideTo = null
+) {
 
-    let boardW = 9;
-    let boardH = 9;
-    let mineQuota = 25;
+    initAudio();
 
-    let dataGrid = [];
+    if(!audioCtx)
+        return;
 
-    let over = false;
+    const now = audioCtx.currentTime;
 
-    let clock = null;
+    const osc =
+        audioCtx.createOscillator();
 
-    let elapsed = 0;
+    const gain =
+        audioCtx.createGain();
 
-    let pristine = true;
+    osc.type = type;
 
-    let activeTool = 'dig';
+    osc.frequency.setValueAtTime(
+        frequency,
+        now
+    );
 
-    const presets = {
+    if(slideTo !== null) {
 
-        beginner: {
-            w: 9,
-            h: 9,
-            m: 25
-        },
+        osc.frequency.exponentialRampToValueAtTime(
+            Math.max(20, slideTo),
+            now + duration
+        );
+    }
 
-        intermediate: {
-            w: 16,
-            h: 16,
-            m: 100
-        },
+    gain.gain.setValueAtTime(
+        0.0001,
+        now
+    );
 
-        expert: {
-            w: 30,
-            h: 16,
-            m: 250
-        }
+    gain.gain.exponentialRampToValueAtTime(
+        volume,
+        now + 0.008
+    );
+
+    gain.gain.exponentialRampToValueAtTime(
+        0.0001,
+        now + duration
+    );
+
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    osc.start(now);
+    osc.stop(now + duration + 0.02);
+}
+
+function noise(
+    duration = 0.15,
+    volume = 0.04,
+    filterFrequency = 1200
+) {
+
+    initAudio();
+
+    if(!audioCtx)
+        return;
+
+    const sampleRate =
+        audioCtx.sampleRate;
+
+    const buffer =
+        audioCtx.createBuffer(
+            1,
+            sampleRate * duration,
+            sampleRate
+        );
+
+    const data =
+        buffer.getChannelData(0);
+
+    for(let i = 0; i < data.length; i++) {
+
+        data[i] =
+            Math.random() * 2 - 1;
+    }
+
+    const source =
+        audioCtx.createBufferSource();
+
+    const filter =
+        audioCtx.createBiquadFilter();
+
+    const gain =
+        audioCtx.createGain();
+
+    filter.type = "lowpass";
+    filter.frequency.value =
+        filterFrequency;
+
+    const now =
+        audioCtx.currentTime;
+
+    gain.gain.setValueAtTime(
+        0.0001,
+        now
+    );
+
+    gain.gain.exponentialRampToValueAtTime(
+        volume,
+        now + 0.01
+    );
+
+    gain.gain.exponentialRampToValueAtTime(
+        0.0001,
+        now + duration
+    );
+
+    source.buffer = buffer;
+
+    source.connect(filter);
+    filter.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    source.start(now);
+    source.stop(now + duration);
+}
+
+/* Individual game sounds */
+
+function soundFlag() {
+
+    tone(
+        430,
+        0.055,
+        0.045,
+        "square",
+        620
+    );
+
+    setTimeout(() => {
+        tone(
+            760,
+            0.07,
+            0.035,
+            "sine",
+            680
+        );
+    }, 35);
+}
+
+function soundUnflag() {
+
+    tone(
+        650,
+        0.08,
+        0.045,
+        "triangle",
+        320
+    );
+}
+
+function soundReveal(number = 0) {
+
+    if(number > 0) {
+
+        const frequencies = [
+            330,
+            390,
+            450,
+            510,
+            570,
+            630,
+            690,
+            750,
+            810,
+            870
+        ];
+
+        const frequency =
+            frequencies[
+                Math.min(
+                    number,
+                    frequencies.length - 1
+                )
+            ];
+
+        tone(
+            frequency,
+            0.055,
+            0.028,
+            "sine",
+            frequency * 0.96
+        );
+
+    } else {
+
+        tone(
+            260,
+            0.045,
+            0.018,
+            "sine",
+            190
+        );
+    }
+}
+
+function soundWaveStep(distance = 0) {
+
+    const frequency =
+        240 +
+        Math.min(distance, 8) * 28;
+
+    tone(
+        frequency,
+        0.035,
+        0.012,
+        "triangle"
+    );
+}
+
+function soundChord() {
+
+    tone(
+        520,
+        0.09,
+        0.04,
+        "sine",
+        680
+    );
+
+    setTimeout(() => {
+
+        tone(
+            680,
+            0.1,
+            0.035,
+            "sine",
+            850
+        );
+
+    }, 55);
+}
+
+function soundWrong() {
+
+    tone(
+        180,
+        0.18,
+        0.07,
+        "sawtooth",
+        85
+    );
+
+    setTimeout(() => {
+
+        tone(
+            105,
+            0.22,
+            0.055,
+            "square",
+            55
+        );
+
+    }, 80);
+
+    noise(
+        0.22,
+        0.035,
+        700
+    );
+}
+
+function soundExplosion() {
+
+    noise(
+        0.55,
+        0.11,
+        900
+    );
+
+    tone(
+        75,
+        0.5,
+        0.12,
+        "sawtooth",
+        28
+    );
+
+    setTimeout(() => {
+
+        tone(
+            48,
+            0.42,
+            0.08,
+            "square",
+            25
+        );
+
+    }, 90);
+}
+
+function soundVictory() {
+
+    const melody = [
+        [523,0],
+        [659,100],
+        [784,200],
+        [1047,310],
+        [1319,430]
+    ];
+
+    melody.forEach(([frequency,delay]) => {
+
+        setTimeout(() => {
+
+            tone(
+                frequency,
+                0.16,
+                0.045,
+                "sine",
+                frequency * 1.015
+            );
+
+        }, delay);
+    });
+}
+
+/* =========================================================
+   GAME STATE
+   ========================================================= */
+
+class Cell {
+
+    constructor(r,c) {
+
+        this.row = r;
+        this.col = c;
+
+        this.mines = 0;
+        this.uncovered = false;
+        this.flaggedLayers = 0;
+    }
+}
+
+let boardW = 9;
+let boardH = 9;
+let mineQuota = 25;
+
+let dataGrid = [];
+
+let over = false;
+let clock = null;
+let elapsed = 0;
+let pristine = true;
+let activeTool = "dig";
+
+const presets = {
+
+    beginner: {
+        w:9,
+        h:9,
+        m:25
+    },
+
+    intermediate: {
+        w:16,
+        h:16,
+        m:100
+    },
+
+    expert: {
+        w:30,
+        h:16,
+        m:250
+    }
+};
+
+/* =========================================================
+   PARTICLES
+   ========================================================= */
+
+function getTileCenter(r,c) {
+
+    const tile =
+        document.getElementById(
+            `cell-${r}-${c}`
+        );
+
+    if(!tile)
+        return null;
+
+    const rect =
+        tile.getBoundingClientRect();
+
+    return {
+        x:rect.left + rect.width / 2,
+        y:rect.top + rect.height / 2
+    };
+}
+
+function createParticle(
+    x,
+    y,
+    options = {}
+) {
+
+    const particle =
+        document.createElement("div");
+
+    particle.className =
+        `particle ${options.square ? "square" : ""}`;
+
+    const angle =
+        options.angle !== undefined
+            ? options.angle
+            : Math.random() * Math.PI * 2;
+
+    const distance =
+        options.distance ||
+        25 + Math.random() * 45;
+
+    const dx =
+        Math.cos(angle) * distance;
+
+    const dy =
+        Math.sin(angle) * distance +
+        (options.gravity || 20);
+
+    const size =
+        options.size ||
+        3 + Math.random() * 4;
+
+    const duration =
+        options.duration ||
+        400 + Math.random() * 300;
+
+    particle.style.left =
+        `${x}px`;
+
+    particle.style.top =
+        `${y}px`;
+
+    particle.style.width =
+        `${size}px`;
+
+    particle.style.height =
+        `${size}px`;
+
+    particle.style.background =
+        options.color ||
+        `hsl(
+            ${210 + Math.random() * 40},
+            90%,
+            65%
+        )`;
+
+    particle.style.setProperty(
+        "--dx",
+        `${dx}px`
+    );
+
+    particle.style.setProperty(
+        "--dy",
+        `${dy}px`
+    );
+
+    particle.style.setProperty(
+        "--rotation",
+        `${Math.random() * 720 - 360}deg`
+    );
+
+    particle.style.setProperty(
+        "--particle-duration",
+        `${duration}ms`
+    );
+
+    document
+        .getElementById("particleLayer")
+        .appendChild(particle);
+
+    setTimeout(
+        () => particle.remove(),
+        duration + 50
+    );
+}
+
+function burstParticles(
+    x,
+    y,
+    count = 12,
+    type = "reveal"
+) {
+
+    const colors = {
+
+        reveal:[
+            "#60a5fa",
+            "#93c5fd",
+            "#38bdf8",
+            "#e0f2fe"
+        ],
+
+        flag:[
+            "#ef4444",
+            "#f87171",
+            "#fca5a5",
+            "#fecaca"
+        ],
+
+        number:[
+            "#a78bfa",
+            "#818cf8",
+            "#c4b5fd",
+            "#ddd6fe"
+        ]
     };
 
+    const palette =
+        colors[type] ||
+        colors.reveal;
 
-    /* ==========================================
-       PARTICLE HELPERS
-    ========================================== */
-
-    function getTileCenter(r, c) {
-
-        const tile =
-            document.getElementById(
-                `cell-${r}-${c}`
-            );
-
-        if(!tile)
-            return null;
-
-        const rect =
-            tile.getBoundingClientRect();
-
-        return {
-
-            x:
-                rect.left +
-                rect.width / 2,
-
-            y:
-                rect.top +
-                rect.height / 2
-        };
-    }
-
-
-    function createParticle(
-        x,
-        y,
-        options = {}
-    ) {
-
-        const particle =
-            document.createElement('div');
-
-        particle.className =
-            `particle ${
-                options.square
-                    ? 'square'
-                    : ''
-            }`;
+    for(let i = 0; i < count; i++) {
 
         const angle =
-            options.angle !== undefined
-                ? options.angle
-                : Math.random() *
-                  Math.PI * 2;
+            Math.PI * 2 * i / count +
+            (Math.random() * .35 - .175);
 
-        const distance =
-            options.distance ||
-            25 +
-            Math.random() * 45;
-
-        const dx =
-            Math.cos(angle) *
-            distance;
-
-        const dy =
-            Math.sin(angle) *
-            distance +
-            (options.gravity || 20);
-
-        const size =
-            options.size ||
-            3 +
-            Math.random() * 4;
-
-        const duration =
-            options.duration ||
-            400 +
-            Math.random() * 300;
-
-        particle.style.left =
-            `${x}px`;
-
-        particle.style.top =
-            `${y}px`;
-
-        particle.style.width =
-            `${size}px`;
-
-        particle.style.height =
-            `${size}px`;
-
-        particle.style.background =
-            options.color ||
-            `hsl(
-                ${210 + Math.random() * 40},
-                90%,
-                65%
-            )`;
-
-        particle.style.setProperty(
-            '--dx',
-            `${dx}px`
-        );
-
-        particle.style.setProperty(
-            '--dy',
-            `${dy}px`
-        );
-
-        particle.style.setProperty(
-            '--rotation',
-            `${Math.random() * 720 - 360}deg`
-        );
-
-        particle.style.setProperty(
-            '--particle-duration',
-            `${duration}ms`
-        );
-
-        document
-            .getElementById('particleLayer')
-            .appendChild(particle);
-
-        setTimeout(
-            () => particle.remove(),
-            duration + 50
+        createParticle(
+            x,
+            y,
+            {
+                angle,
+                distance:22 + Math.random() * 38,
+                gravity:10 + Math.random() * 25,
+                size:2.5 + Math.random() * 4,
+                color:
+                    palette[
+                        Math.floor(
+                            Math.random() *
+                            palette.length
+                        )
+                    ],
+                square:Math.random() > .45
+            }
         );
     }
+}
 
+function breakingEffect(
+    r,
+    c,
+    type = "reveal"
+) {
 
-    function burstParticles(
-        x,
-        y,
-        count = 12,
-        type = 'reveal'
-    ) {
+    const pos =
+        getTileCenter(r,c);
 
-        const colors = {
+    if(!pos)
+        return;
 
-            reveal: [
-                '#60a5fa',
-                '#93c5fd',
-                '#38bdf8',
-                '#e0f2fe'
-            ],
+    burstParticles(
+        pos.x,
+        pos.y,
+        type === "flag" ? 14 : 10,
+        type
+    );
 
-            flag: [
-                '#ef4444',
-                '#f87171',
-                '#fca5a5',
-                '#fecaca'
-            ],
+    const ring =
+        document.createElement("div");
 
-            number: [
-                '#a78bfa',
-                '#818cf8',
-                '#c4b5fd',
-                '#ddd6fe'
-            ]
-        };
+    ring.className =
+        "tile-burst-ring";
 
-        const palette =
-            colors[type] ||
-            colors.reveal;
+    ring.style.left =
+        `${pos.x}px`;
 
-        for(
-            let i = 0;
-            i < count;
-            i++
-        ) {
+    ring.style.top =
+        `${pos.y}px`;
 
-            const angle =
-                (
-                    Math.PI * 2 *
-                    i / count
-                ) +
-                (
-                    Math.random() *
-                    0.35 -
-                    0.175
-                );
+    if(type === "flag") {
 
-            createParticle(
-                x,
-                y,
-                {
-
-                    angle,
-
-                    distance:
-                        22 +
-                        Math.random() * 38,
-
-                    gravity:
-                        10 +
-                        Math.random() * 25,
-
-                    size:
-                        2.5 +
-                        Math.random() * 4,
-
-                    color:
-                        palette[
-                            Math.floor(
-                                Math.random() *
-                                palette.length
-                            )
-                        ],
-
-                    square:
-                        Math.random() > 0.45
-                }
-            );
-        }
+        ring.style.borderColor =
+            "rgba(239,68,68,.85)";
     }
 
+    document
+        .getElementById("particleLayer")
+        .appendChild(ring);
 
-    function breakingEffect(
+    setTimeout(
+        () => ring.remove(),
+        450
+    );
+}
+
+function shakeScreen(strong = false) {
+
+    const app =
+        document.getElementById("appWindow");
+
+    app.classList.remove(
+        "screen-shake",
+        "screen-shake-heavy"
+    );
+
+    void app.offsetWidth;
+
+    app.classList.add(
+        strong
+            ? "screen-shake-heavy"
+            : "screen-shake"
+    );
+}
+
+function flagEffect(r,c) {
+
+    const tile =
+        document.getElementById(
+            `cell-${r}-${c}`
+        );
+
+    if(!tile)
+        return;
+
+    tile.classList.remove(
+        "flag-glow"
+    );
+
+    void tile.offsetWidth;
+
+    tile.classList.add(
+        "flag-glow"
+    );
+
+    breakingEffect(
         r,
         c,
-        type = 'reveal'
-    ) {
+        "flag"
+    );
+}
 
-        const pos =
-            getTileCenter(r, c);
+/* =========================================================
+   DIFFICULTY / CONTROLS
+   ========================================================= */
 
-        if(!pos)
-            return;
+function onDiffChange() {
 
-        burstParticles(
-            pos.x,
-            pos.y,
-            type === 'flag'
-                ? 14
-                : 10,
-            type
-        );
-
-        const ring =
-            document.createElement('div');
-
-        ring.className =
-            'tile-burst-ring';
-
-        ring.style.left =
-            `${pos.x}px`;
-
-        ring.style.top =
-            `${pos.y}px`;
-
-        if(type === 'flag') {
-
-            ring.style.borderColor =
-                'rgba(239,68,68,0.85)';
-        }
-
-        document
-            .getElementById('particleLayer')
-            .appendChild(ring);
-
-        setTimeout(
-            () => ring.remove(),
-            450
-        );
-    }
-
-
-    function shakeScreen(
-        strong = false
-    ) {
-
-        const app =
-            document.getElementById(
-                'appWindow'
-            );
-
-        app.classList.remove(
-            'screen-shake',
-            'screen-shake-heavy'
-        );
-
-        void app.offsetWidth;
-
-        app.classList.add(
-            strong
-                ? 'screen-shake-heavy'
-                : 'screen-shake'
-        );
-    }
-
-
-    function flagEffect(r, c) {
-
-        const tile =
-            document.getElementById(
-                `cell-${r}-${c}`
-            );
-
-        if(!tile)
-            return;
-
-        tile.classList.remove(
-            'flag-glow'
-        );
-
-        void tile.offsetWidth;
-
-        tile.classList.add(
-            'flag-glow'
-        );
-
-        breakingEffect(
-            r,
-            c,
-            'flag'
-        );
-    }
-
-
-    /* ==========================================
-       DIFFICULTY
-    ========================================== */
-
-    function onDiffChange() {
-
-        const type =
-            document
-                .getElementById(
-                    'diffSelect'
-                )
-                .value;
-
-        const panel =
-            document.getElementById(
-                'customControls'
-            );
-
-        if(type === 'custom') {
-
-            panel.classList.remove(
-                'hidden'
-            );
-
-            panel.classList.add(
-                'flex'
-            );
-
-        } else {
-
-            panel.classList.remove(
-                'flex'
-            );
-
-            panel.classList.add(
-                'hidden'
-            );
-
-            boardW =
-                presets[type].w;
-
-            boardH =
-                presets[type].h;
-
-            mineQuota =
-                presets[type].m;
-
-            resetEngine();
-        }
-    }
-
-
-    /* ==========================================
-       TOOL
-    ========================================== */
-
-    function setActiveTool(tool) {
-
-        activeTool = tool;
-
-        const digBtn =
-            document.getElementById(
-                'toolDig'
-            );
-
-        const flagBtn =
-            document.getElementById(
-                'toolFlag'
-            );
-
-        if(tool === 'dig') {
-
-            digBtn.className =
-                "px-3 py-1.5 rounded-md font-bold text-xs bg-blue-600 text-white transition-all";
-
-            flagBtn.className =
-                "px-3 py-1.5 rounded-md font-bold text-xs text-slate-400 hover:text-white transition-all";
-
-        } else {
-
-            flagBtn.className =
-                "px-3 py-1.5 rounded-md font-bold text-xs bg-blue-600 text-white transition-all";
-
-            digBtn.className =
-                "px-3 py-1.5 rounded-md font-bold text-xs text-slate-400 hover:text-white transition-all";
-        }
-    }
-
-
-    /* ==========================================
-       RESET
-    ========================================== */
-
-    function resetEngine() {
-
-        clearInterval(clock);
-
-        clock = null;
-
-        elapsed = 0;
-
+    const type =
         document.getElementById(
-            'timerTxt'
-        ).textContent = "0";
+            "diffSelect"
+        ).value;
 
-        over = false;
+    const panel =
+        document.getElementById(
+            "customControls"
+        );
 
-        pristine = true;
+    if(type === "custom") {
+
+        panel.classList.remove("hidden");
+        panel.classList.add("flex");
+
+    } else {
+
+        panel.classList.remove("flex");
+        panel.classList.add("hidden");
+
+        boardW = presets[type].w;
+        boardH = presets[type].h;
+        mineQuota = presets[type].m;
+
+        resetEngine();
+    }
+}
+
+function setActiveTool(tool) {
+
+    initAudio();
+
+    activeTool = tool;
+
+    const digBtn =
+        document.getElementById("toolDig");
+
+    const flagBtn =
+        document.getElementById("toolFlag");
+
+    if(tool === "dig") {
+
+        digBtn.className =
+            "px-3 py-1.5 rounded-md font-bold text-xs bg-blue-600 text-white transition-all";
+
+        flagBtn.className =
+            "px-3 py-1.5 rounded-md font-bold text-xs text-slate-400 hover:text-white transition-all";
+
+    } else {
+
+        flagBtn.className =
+            "px-3 py-1.5 rounded-md font-bold text-xs bg-blue-600 text-white transition-all";
+
+        digBtn.className =
+            "px-3 py-1.5 rounded-md font-bold text-xs text-slate-400 hover:text-white transition-all";
+    }
+}
+
+/* =========================================================
+   RESET / BOARD
+   ========================================================= */
+
+function resetEngine() {
+
+    initAudio();
+
+    clearInterval(clock);
+
+    clock = null;
+    elapsed = 0;
+    over = false;
+    pristine = true;
+
+    document.getElementById(
+        "timerTxt"
+    ).textContent = "0";
+
+    if(
+        document.getElementById(
+            "diffSelect"
+        ).value === "custom"
+    ) {
+
+        boardW =
+            Math.max(
+                5,
+                Math.min(
+                    parseInt(
+                        document.getElementById("inpW").value
+                    ) || 9,
+                    35
+                )
+            );
+
+        boardH =
+            Math.max(
+                5,
+                Math.min(
+                    parseInt(
+                        document.getElementById("inpH").value
+                    ) || 9,
+                    35
+                )
+            );
+
+        mineQuota =
+            Math.max(
+                1,
+                Math.min(
+                    parseInt(
+                        document.getElementById("inpM").value
+                    ) || 25,
+                    boardW * boardH * 2
+                )
+            );
+    }
+
+    document.getElementById(
+        "minesTxt"
+    ).textContent = mineQuota;
+
+    document.getElementById(
+        "progTxt"
+    ).textContent = "0%";
+
+    document.getElementById(
+        "bossTally"
+    ).textContent = "9";
+
+    let targetSize = 38;
+
+    if(boardW >= 25)
+        targetSize = 26;
+    else if(boardW >= 16)
+        targetSize = 32;
+
+    document.documentElement.style.setProperty(
+        "--tileSize",
+        `${targetSize}px`
+    );
+
+    dataGrid = [];
+
+    const container =
+        document.getElementById(
+            "gridNode"
+        );
+
+    container.innerHTML = "";
+
+    container.style.gridTemplateColumns =
+        `repeat(${boardW}, var(--tileSize))`;
+
+    for(let r = 0; r < boardH; r++) {
+
+        dataGrid[r] = [];
+
+        for(let c = 0; c < boardW; c++) {
+
+            dataGrid[r][c] =
+                new Cell(r,c);
+
+            const block =
+                document.createElement("div");
+
+            block.className =
+                "game-tile flex items-center justify-center font-black cursor-pointer relative text-center";
+
+            block.id =
+                `cell-${r}-${c}`;
+
+            block.addEventListener(
+                "click",
+                () => {
+
+                    initAudio();
+
+                    if(activeTool === "dig")
+                        triggerLeft(r,c);
+                    else
+                        triggerRight(r,c);
+                }
+            );
+
+            block.addEventListener(
+                "contextmenu",
+                e => {
+
+                    e.preventDefault();
+
+                    initAudio();
+
+                    triggerRight(r,c);
+                }
+            );
+
+            container.appendChild(block);
+        }
+    }
+
+    lucide.createIcons();
+}
+
+/* =========================================================
+   MINE GENERATION
+   ========================================================= */
+
+function deployMines(safeR,safeC) {
+
+    let seeded = 0;
+
+    let peakProx = 0;
+
+    const totalCells =
+        boardW * boardH;
+
+    const maxMines =
+        totalCells * 3;
+
+    mineQuota =
+        Math.min(
+            mineQuota,
+            maxMines - 9
+        );
+
+    while(seeded < mineQuota) {
+
+        const r =
+            Math.floor(
+                Math.random() * boardH
+            );
+
+        const c =
+            Math.floor(
+                Math.random() * boardW
+            );
 
         if(
-            document
-                .getElementById(
-                    'diffSelect'
-                )
-                .value === 'custom'
-        ) {
+            Math.abs(r-safeR) <= 1 &&
+            Math.abs(c-safeC) <= 1
+        )
+            continue;
 
-            boardW =
-                Math.max(
-                    5,
-                    Math.min(
-                        parseInt(
-                            document
-                                .getElementById(
-                                    'inpW'
-                                )
-                                .value
-                        ) || 9,
-                        35
-                    )
-                );
+        if(dataGrid[r][c].mines < 3) {
 
-            boardH =
-                Math.max(
-                    5,
-                    Math.min(
-                        parseInt(
-                            document
-                                .getElementById(
-                                    'inpH'
-                                )
-                                .value
-                        ) || 9,
-                        35
-                    )
-                );
-
-            mineQuota =
-                Math.max(
-                    1,
-                    Math.min(
-                        parseInt(
-                            document
-                                .getElementById(
-                                    'inpM'
-                                )
-                                .value
-                        ) || 25,
-                        boardW * boardH * 2
-                    )
-                );
+            dataGrid[r][c].mines++;
+            seeded++;
         }
-
-        document.getElementById(
-            'minesTxt'
-        ).textContent =
-            mineQuota;
-
-        document.getElementById(
-            'progTxt'
-        ).textContent =
-            "0%";
-
-        document.getElementById(
-            'bossTally'
-        ).textContent =
-            "9";
-
-        let targetSize = 38;
-
-        if(boardW >= 25)
-            targetSize = 26;
-
-        else if(boardW >= 16)
-            targetSize = 32;
-
-        document.documentElement.style
-            .setProperty(
-                '--tileSize',
-                `${targetSize}px`
-            );
-
-        dataGrid = [];
-
-        const container =
-            document.getElementById(
-                'gridNode'
-            );
-
-        container.innerHTML = '';
-
-        container.style.gridTemplateColumns =
-            `repeat(
-                ${boardW},
-                var(--tileSize)
-            )`;
-
-        for(
-            let r = 0;
-            r < boardH;
-            r++
-        ) {
-
-            dataGrid[r] = [];
-
-            for(
-                let c = 0;
-                c < boardW;
-                c++
-            ) {
-
-                dataGrid[r][c] =
-                    new Cell(r, c);
-
-                const block =
-                    document.createElement(
-                        'div'
-                    );
-
-                block.className =
-                    "game-tile flex items-center justify-center font-black cursor-pointer relative text-center";
-
-                block.id =
-                    `cell-${r}-${c}`;
-
-                block.addEventListener(
-                    'click',
-                    () => {
-
-                        if(
-                            activeTool === 'dig'
-                        )
-                            triggerLeft(r,c);
-
-                        else
-                            triggerRight(r,c);
-                    }
-                );
-
-                block.addEventListener(
-                    'contextmenu',
-                    e => {
-
-                        e.preventDefault();
-
-                        triggerRight(r,c);
-                    }
-                );
-
-                container.appendChild(
-                    block
-                );
-            }
-        }
-
-        lucide.createIcons();
     }
 
+    for(let r = 0; r < boardH; r++) {
 
-    /* ==========================================
-       MINE GENERATION
-    ========================================== */
+        for(let c = 0; c < boardW; c++) {
 
-    function deployMines(
-        safeR,
-        safeC
-    ) {
+            const p =
+                calcProx(r,c);
 
-        let seeded = 0;
+            if(p > peakProx)
+                peakProx = p;
+        }
+    }
 
-        let peakProx = 0;
+    document.getElementById(
+        "bossTally"
+    ).textContent =
+        peakProx >= 9
+            ? peakProx
+            : "9";
+}
 
-        while(
-            seeded < mineQuota
-        ) {
+function initClock() {
 
-            const r =
-                Math.floor(
-                    Math.random() *
-                    boardH
-                );
+    clock =
+        setInterval(
+            () => {
 
-            const c =
-                Math.floor(
-                    Math.random() *
-                    boardW
-                );
+                elapsed++;
+
+                document.getElementById(
+                    "timerTxt"
+                ).textContent =
+                    elapsed;
+
+            },
+            1000
+        );
+}
+
+/* =========================================================
+   GAME INPUT
+   ========================================================= */
+
+function triggerLeft(r,c) {
+
+    if(over)
+        return;
+
+    initAudio();
+
+    const cell =
+        dataGrid[r][c];
+
+    if(cell.uncovered) {
+
+        const proxCount =
+            calcProx(r,c);
+
+        if(proxCount > 0) {
+
+            soundChord();
+
+            chordReveal(r,c);
+        }
+
+        return;
+    }
+
+    if(cell.flaggedLayers > 0)
+        return;
+
+    if(pristine) {
+
+        pristine = false;
+
+        deployMines(r,c);
+
+        initClock();
+    }
+
+    if(cell.mines > 0) {
+
+        detonateBoard(r,c);
+
+        return;
+    }
+
+    revealAreaSequentially(r,c);
+}
+
+/* =========================================================
+   CHORDING
+   ========================================================= */
+
+function chordReveal(r,c) {
+
+    if(over)
+        return;
+
+    const requiredFlags =
+        calcProx(r,c);
+
+    const neighbors = [];
+
+    let surroundingFlags = 0;
+
+    for(let dr = -1; dr <= 1; dr++) {
+
+        for(let dc = -1; dc <= 1; dc++) {
+
+            if(dr === 0 && dc === 0)
+                continue;
+
+            const nr = r + dr;
+            const nc = c + dc;
 
             if(
-                Math.abs(
-                    r - safeR
-                ) <= 1 &&
-                Math.abs(
-                    c - safeC
-                ) <= 1
+                nr < 0 ||
+                nr >= boardH ||
+                nc < 0 ||
+                nc >= boardW
             )
                 continue;
 
+            const neighbor =
+                dataGrid[nr][nc];
+
+            neighbors.push(neighbor);
+
+            surroundingFlags +=
+                neighbor.flaggedLayers;
+        }
+    }
+
+    /*
+       The exact number of flag layers must equal
+       the number shown on the tile.
+    */
+
+    if(
+        surroundingFlags !==
+        requiredFlags
+    ) {
+
+        chordMistake(r,c);
+
+        return;
+    }
+
+    /*
+       Every flagged tile must have exactly the
+       correct number of mines.
+    */
+
+    for(const neighbor of neighbors) {
+
+        if(neighbor.flaggedLayers > 0) {
+
             if(
-                dataGrid[r][c].mines <
-                3
+                neighbor.flaggedLayers !==
+                neighbor.mines
             ) {
 
-                dataGrid[r][c].mines++;
+                chordMistake(r,c);
 
-                seeded++;
+                return;
             }
         }
+    }
 
-        for(
-            let r = 0;
-            r < boardH;
-            r++
+    const revealTargets = [];
+
+    for(const neighbor of neighbors) {
+
+        if(
+            !neighbor.uncovered &&
+            neighbor.flaggedLayers === 0
         ) {
 
-            for(
-                let c = 0;
-                c < boardW;
-                c++
-            ) {
+            if(neighbor.mines > 0) {
 
-                if(
-                    dataGrid[r][c].mines === 0
-                ) {
+                chordMistake(
+                    neighbor.row,
+                    neighbor.col
+                );
 
-                    const p =
-                        calcProx(r,c);
-
-                    if(p > peakProx)
-                        peakProx = p;
-                }
+                return;
             }
+
+            revealTargets.push({
+                r:neighbor.row,
+                c:neighbor.col,
+                distance:1
+            });
         }
-
-        document.getElementById(
-            'bossTally'
-        ).textContent =
-            peakProx >= 9
-                ? peakProx
-                : "9";
     }
 
+    revealChordWave(revealTargets);
+}
 
-    function initClock() {
+/* =========================================================
+   CHORD WAVE
+   ========================================================= */
 
-        clock =
-            setInterval(
-                () => {
+function revealChordWave(initialTargets) {
 
-                    elapsed++;
+    if(initialTargets.length === 0) {
 
-                    document.getElementById(
-                        'timerTxt'
-                    ).textContent =
-                        elapsed;
+        evalStatus();
 
-                },
-                1000
-            );
+        return;
     }
 
+    const queue =
+        [...initialTargets];
 
-    /* ==========================================
-       NORMAL CLICK
-    ========================================== */
+    const visited =
+        new Set();
 
-    function triggerLeft(r, c) {
+    const wave = [];
 
-        if(over)
-            return;
+    while(queue.length > 0) {
+
+        const current =
+            queue.shift();
+
+        const r = current.r;
+        const c = current.c;
+
+        const key =
+            `${r},${c}`;
+
+        if(visited.has(key))
+            continue;
+
+        visited.add(key);
 
         const cell =
             dataGrid[r][c];
 
-        /*
-         * Clicking an already revealed number
-         * performs the chord action.
-         */
-        if(cell.uncovered) {
+        if(
+            cell.uncovered ||
+            cell.flaggedLayers > 0 ||
+            cell.mines > 0
+        )
+            continue;
 
-            const proxCount =
-                calcProx(r,c);
+        wave.push({
+            r,
+            c,
+            distance:current.distance
+        });
 
-            if(proxCount > 0)
-                chordReveal(r,c);
-
-            return;
-        }
-
-        if(cell.flaggedLayers > 0)
-            return;
-
-        if(pristine) {
-
-            pristine = false;
-
-            deployMines(r,c);
-
-            initClock();
-        }
-
-        if(cell.mines > 0) {
-
-            detonateBoard(r,c);
-
-            return;
-        }
-
-        revealAreaSequentially(
-            r,c
-        );
-    }
-
-
-    /* ==========================================
-       CHORD REVEAL
-    ========================================== */
-
-    function chordReveal(r,c) {
-
-        if(over)
-            return;
-
-        const requiredFlags =
+        const proximity =
             calcProx(r,c);
 
-        const neighbors = [];
+        if(proximity > 0)
+            continue;
 
-        let surroundingFlags = 0;
+        for(let dr = -1; dr <= 1; dr++) {
 
-        for(
-            let dr = -1;
-            dr <= 1;
-            dr++
-        ) {
+            for(let dc = -1; dc <= 1; dc++) {
 
-            for(
-                let dc = -1;
-                dc <= 1;
-                dc++
-            ) {
-
-                if(
-                    dr === 0 &&
-                    dc === 0
-                )
+                if(dr === 0 && dc === 0)
                     continue;
 
                 const nr = r + dr;
@@ -1387,442 +1612,90 @@
                 const neighbor =
                     dataGrid[nr][nc];
 
-                neighbors.push(
-                    neighbor
-                );
-
-                surroundingFlags +=
-                    neighbor.flaggedLayers;
-            }
-        }
-
-        /*
-         * Wrong total number of flags.
-         */
-        if(
-            surroundingFlags !==
-            requiredFlags
-        ) {
-
-            chordMistake(r,c);
-
-            return;
-        }
-
-        /*
-         * Correct total, but wrong
-         * placement or wrong number of
-         * flag layers on a multi-mine tile.
-         */
-        for(
-            const neighbor of neighbors
-        ) {
-
-            if(
-                neighbor.flaggedLayers > 0
-            ) {
-
                 if(
-                    neighbor.flaggedLayers !==
-                    neighbor.mines
-                ) {
+                    neighbor.uncovered ||
+                    neighbor.flaggedLayers > 0 ||
+                    neighbor.mines > 0
+                )
+                    continue;
 
-                    chordMistake(r,c);
-
-                    return;
-                }
-            }
-        }
-
-        const revealTargets = [];
-
-        for(
-            const neighbor of neighbors
-        ) {
-
-            if(
-                !neighbor.uncovered &&
-                neighbor.flaggedLayers === 0
-            ) {
-
-                /*
-                 * A mine with no flag means
-                 * the placement was incomplete.
-                 */
-                if(neighbor.mines > 0) {
-
-                    chordMistake(
-                        neighbor.row,
-                        neighbor.col
-                    );
-
-                    return;
-                }
-
-                revealTargets.push({
-
-                    r: neighbor.row,
-
-                    c: neighbor.col,
-
-                    distance: 1
+                queue.push({
+                    r:nr,
+                    c:nc,
+                    distance:
+                        current.distance + 1
                 });
             }
         }
-
-        revealChordWave(
-            revealTargets
-        );
     }
 
+    wave.sort(
+        (a,b) =>
+            a.distance - b.distance
+    );
 
-    /* ==========================================
-       CHORD WAVE
-    ========================================== */
+    let index = 0;
 
-    function revealChordWave(
-        initialTargets
-    ) {
+    function revealNext() {
 
-        if(
-            initialTargets.length === 0
-        ) {
+        if(over)
+            return;
+
+        if(index >= wave.length) {
 
             evalStatus();
 
             return;
         }
 
-        const queue =
-            [...initialTargets];
+        const tile =
+            wave[index++];
 
-        const visited =
-            new Set();
-
-        const wave = [];
-
-        while(queue.length > 0) {
-
-            const current =
-                queue.shift();
-
-            const r =
-                current.r;
-
-            const c =
-                current.c;
-
-            const key =
-                `${r},${c}`;
-
-            if(
-                visited.has(key)
-            )
-                continue;
-
-            visited.add(key);
-
-            const cell =
-                dataGrid[r][c];
-
-            if(
-                cell.uncovered ||
-                cell.flaggedLayers > 0 ||
-                cell.mines > 0
-            )
-                continue;
-
-            wave.push({
-
-                r,
-
-                c,
-
-                distance:
-                    current.distance
-            });
-
-            const proximity =
-                calcProx(r,c);
-
-            if(proximity > 0)
-                continue;
-
-            for(
-                let dr = -1;
-                dr <= 1;
-                dr++
-            ) {
-
-                for(
-                    let dc = -1;
-                    dc <= 1;
-                    dc++
-                ) {
-
-                    if(
-                        dr === 0 &&
-                        dc === 0
-                    )
-                        continue;
-
-                    const nr =
-                        r + dr;
-
-                    const nc =
-                        c + dc;
-
-                    if(
-                        nr < 0 ||
-                        nr >= boardH ||
-                        nc < 0 ||
-                        nc >= boardW
-                    )
-                        continue;
-
-                    const neighbor =
-                        dataGrid[nr][nc];
-
-                    if(
-                        neighbor.uncovered ||
-                        neighbor.flaggedLayers > 0 ||
-                        neighbor.mines > 0
-                    )
-                        continue;
-
-                    queue.push({
-
-                        r: nr,
-
-                        c: nc,
-
-                        distance:
-                            current.distance + 1
-                    });
-                }
-            }
-        }
-
-        wave.sort(
-            (a,b) =>
-                a.distance -
-                b.distance
+        revealSingleTile(
+            tile.r,
+            tile.c,
+            tile.distance
         );
 
-        let index = 0;
+        soundWaveStep(tile.distance);
 
-        function revealNext() {
-
-            if(over)
-                return;
-
-            if(
-                index >= wave.length
-            ) {
-
-                evalStatus();
-
-                return;
-            }
-
-            const tile =
-                wave[index++];
-
-            revealSingleTile(
-                tile.r,
-                tile.c
-            );
-
-            setTimeout(
-                revealNext,
-                35
-            );
-        }
-
-        revealNext();
-    }
-
-
-    /* ==========================================
-       NORMAL FLOOD REVEAL
-    ========================================== */
-
-    function buildRevealWave(
-        startR,
-        startC
-    ) {
-
-        const queue = [{
-
-            r: startR,
-
-            c: startC,
-
-            distance: 0
-        }];
-
-        const visited =
-            new Set();
-
-        visited.add(
-            `${startR},${startC}`
+        setTimeout(
+            revealNext,
+            35
         );
-
-        const result = [];
-
-        while(queue.length > 0) {
-
-            const current =
-                queue.shift();
-
-            const r =
-                current.r;
-
-            const c =
-                current.c;
-
-            const cell =
-                dataGrid[r][c];
-
-            if(
-                cell.uncovered ||
-                cell.flaggedLayers > 0 ||
-                cell.mines > 0
-            )
-                continue;
-
-            result.push(current);
-
-            const proximity =
-                calcProx(r,c);
-
-            if(proximity > 0)
-                continue;
-
-            for(
-                let dr = -1;
-                dr <= 1;
-                dr++
-            ) {
-
-                for(
-                    let dc = -1;
-                    dc <= 1;
-                    dc++
-                ) {
-
-                    if(
-                        dr === 0 &&
-                        dc === 0
-                    )
-                        continue;
-
-                    const nr =
-                        r + dr;
-
-                    const nc =
-                        c + dc;
-
-                    if(
-                        nr < 0 ||
-                        nr >= boardH ||
-                        nc < 0 ||
-                        nc >= boardW
-                    )
-                        continue;
-
-                    const key =
-                        `${nr},${nc}`;
-
-                    if(
-                        visited.has(key)
-                    )
-                        continue;
-
-                    visited.add(key);
-
-                    queue.push({
-
-                        r: nr,
-
-                        c: nc,
-
-                        distance:
-                            current.distance + 1
-                    });
-                }
-            }
-        }
-
-        return result;
     }
 
+    revealNext();
+}
 
-    function revealAreaSequentially(
-        startR,
-        startC
-    ) {
+/* =========================================================
+   NORMAL FLOOD REVEAL
+   ========================================================= */
 
-        const wave =
-            buildRevealWave(
-                startR,
-                startC
-            );
+function buildRevealWave(startR,startC) {
 
-        wave.sort(
-            (a,b) =>
-                a.distance -
-                b.distance
-        );
+    const queue = [{
+        r:startR,
+        c:startC,
+        distance:0
+    }];
 
-        let index = 0;
+    const visited =
+        new Set();
 
-        function revealNext() {
+    visited.add(
+        `${startR},${startC}`
+    );
 
-            if(over)
-                return;
+    const result = [];
 
-            if(
-                index >= wave.length
-            ) {
+    while(queue.length > 0) {
 
-                evalStatus();
+        const current =
+            queue.shift();
 
-                return;
-            }
-
-            const item =
-                wave[index++];
-
-            revealSingleTile(
-                item.r,
-                item.c
-            );
-
-            const delay =
-                wave.length > 100
-                    ? 24
-                    : wave.length > 40
-                        ? 32
-                        : 45;
-
-            setTimeout(
-                revealNext,
-                delay
-            );
-        }
-
-        revealNext();
-    }
-
-
-    /* ==========================================
-       REVEAL ONE TILE
-    ========================================== */
-
-    function revealSingleTile(
-        r,c
-    ) {
+        const r = current.r;
+        const c = current.c;
 
         const cell =
             dataGrid[r][c];
@@ -1832,197 +1705,254 @@
             cell.flaggedLayers > 0 ||
             cell.mines > 0
         )
-            return;
+            continue;
 
-        cell.uncovered = true;
+        result.push(current);
 
-        const dom =
-            document.getElementById(
-                `cell-${r}-${c}`
-            );
-
-        dom.classList.add(
-            'revealed'
-        );
-
-        const proxCount =
+        const proximity =
             calcProx(r,c);
 
-        if(proxCount > 0) {
+        if(proximity > 0)
+            continue;
 
-            dom.textContent =
-                proxCount;
+        for(let dr = -1; dr <= 1; dr++) {
 
-            dom.className +=
-                proxCount >= 9
-                    ? " count-boss"
-                    : ` count-${proxCount}`;
+            for(let dc = -1; dc <= 1; dc++) {
 
-        }
+                if(dr === 0 && dc === 0)
+                    continue;
 
-        dom.classList.remove(
-            'tile-pop'
-        );
-
-        void dom.offsetWidth;
-
-        dom.classList.add(
-            'tile-pop'
-        );
-
-        breakingEffect(
-            r,
-            c,
-            proxCount > 0
-                ? 'number'
-                : 'reveal'
-        );
-
-        shakeScreen(false);
-    }
-
-
-    /* ==========================================
-       PROXIMITY
-    ========================================== */
-
-    function calcProx(r,c) {
-
-        let total = 0;
-
-        for(
-            let dr = -1;
-            dr <= 1;
-            dr++
-        ) {
-
-            for(
-                let dc = -1;
-                dc <= 1;
-                dc++
-            ) {
-
-                const nr =
-                    r + dr;
-
-                const nc =
-                    c + dc;
+                const nr = r + dr;
+                const nc = c + dc;
 
                 if(
-                    nr >= 0 &&
-                    nr < boardH &&
-                    nc >= 0 &&
-                    nc < boardW
-                ) {
+                    nr < 0 ||
+                    nr >= boardH ||
+                    nc < 0 ||
+                    nc >= boardW
+                )
+                    continue;
 
-                    total +=
-                        dataGrid[nr][nc]
-                            .mines;
-                }
+                const key =
+                    `${nr},${nc}`;
+
+                if(visited.has(key))
+                    continue;
+
+                visited.add(key);
+
+                queue.push({
+                    r:nr,
+                    c:nc,
+                    distance:
+                        current.distance + 1
+                });
             }
         }
-
-        return total;
     }
 
+    return result;
+}
 
-    /* ==========================================
-       FLAGS
-    ========================================== */
+function revealAreaSequentially(startR,startC) {
 
-    function triggerRight(r,c) {
+    const wave =
+        buildRevealWave(
+            startR,
+            startC
+        );
+
+    wave.sort(
+        (a,b) =>
+            a.distance - b.distance
+    );
+
+    let index = 0;
+
+    function revealNext() {
 
         if(over)
             return;
 
-        const cell =
-            dataGrid[r][c];
+        if(index >= wave.length) {
 
-        if(cell.uncovered)
+            evalStatus();
+
             return;
-
-        const dom =
-            document.getElementById(
-                `cell-${r}-${c}`
-            );
-
-        if(
-            cell.flaggedLayers < 3
-        ) {
-
-            cell.flaggedLayers++;
-
-            dom.innerHTML =
-                `<i
-                    data-lucide="flag"
-                    class="w-3.5 h-3.5 text-red-500 fill-red-500">
-                </i>
-
-                <span
-                    class="absolute -top-1 -right-1 bg-red-600 text-white rounded-full font-bold text-[7px] w-3 h-3 flex items-center justify-center border border-slate-900">
-
-                    ${cell.flaggedLayers}
-
-                </span>`;
-
-            flagEffect(r,c);
-
-        } else {
-
-            cell.flaggedLayers = 0;
-
-            dom.innerHTML = '';
-
-            const pos =
-                getTileCenter(r,c);
-
-            if(pos) {
-
-                burstParticles(
-                    pos.x,
-                    pos.y,
-                    7,
-                    'flag'
-                );
-            }
         }
 
-        const activeFlags =
-            dataGrid
-                .flatMap(row => row)
-                .reduce(
-                    (acc,curr) =>
-                        acc +
-                        curr.flaggedLayers,
-                    0
-                );
+        const item =
+            wave[index++];
 
-        document.getElementById(
-            'minesTxt'
-        ).textContent =
-            Math.max(
-                0,
-                mineQuota -
-                activeFlags
-            );
+        revealSingleTile(
+            item.r,
+            item.c,
+            item.distance
+        );
 
-        lucide.createIcons();
+        const delay =
+            wave.length > 100
+                ? 24
+                : wave.length > 40
+                    ? 32
+                    : 45;
 
-        evalStatus();
+        setTimeout(
+            revealNext,
+            delay
+        );
     }
 
+    revealNext();
+}
 
-    /* ==========================================
-       CHORD FAILURE
-    ========================================== */
+/* =========================================================
+   REVEAL TILE
+   ========================================================= */
 
-    function chordMistake(r,c) {
+function revealSingleTile(r,c,distance = 0) {
 
-        over = true;
+    const cell =
+        dataGrid[r][c];
 
-        clearInterval(clock);
+    if(
+        cell.uncovered ||
+        cell.flaggedLayers > 0 ||
+        cell.mines > 0
+    )
+        return;
 
-        shakeScreen(true);
+    cell.uncovered = true;
+
+    const dom =
+        document.getElementById(
+            `cell-${r}-${c}`
+        );
+
+    dom.classList.add("revealed");
+
+    const proxCount =
+        calcProx(r,c);
+
+    if(proxCount > 0) {
+
+        dom.textContent =
+            proxCount;
+
+        dom.className +=
+            proxCount >= 9
+                ? " count-boss"
+                : ` count-${proxCount}`;
+    }
+
+    dom.classList.remove("tile-pop");
+
+    void dom.offsetWidth;
+
+    dom.classList.add("tile-pop");
+
+    breakingEffect(
+        r,
+        c,
+        proxCount > 0
+            ? "number"
+            : "reveal"
+    );
+
+    soundReveal(proxCount);
+
+    /*
+       A very slight shake on every newly revealed tile.
+    */
+
+    shakeScreen(false);
+}
+
+/* =========================================================
+   NUMBER CALCULATION
+   ========================================================= */
+
+function calcProx(r,c) {
+
+    let total = 0;
+
+    for(let dr = -1; dr <= 1; dr++) {
+
+        for(let dc = -1; dc <= 1; dc++) {
+
+            /*
+               IMPORTANT:
+               Do not count the tile itself.
+            */
+
+            if(dr === 0 && dc === 0)
+                continue;
+
+            const nr = r + dr;
+            const nc = c + dc;
+
+            if(
+                nr >= 0 &&
+                nr < boardH &&
+                nc >= 0 &&
+                nc < boardW
+            ) {
+
+                total +=
+                    dataGrid[nr][nc].mines;
+            }
+        }
+    }
+
+    return total;
+}
+
+/* =========================================================
+   FLAGS
+   ========================================================= */
+
+function triggerRight(r,c) {
+
+    if(over)
+        return;
+
+    initAudio();
+
+    const cell =
+        dataGrid[r][c];
+
+    if(cell.uncovered)
+        return;
+
+    const dom =
+        document.getElementById(
+            `cell-${r}-${c}`
+        );
+
+    if(cell.flaggedLayers < 3) {
+
+        cell.flaggedLayers++;
+
+        dom.innerHTML =
+            `<i
+                data-lucide="flag"
+                class="w-3.5 h-3.5 text-red-500 fill-red-500">
+            </i>
+
+            <span
+                class="absolute -top-1 -right-1 bg-red-600 text-white rounded-full font-bold text-[7px] w-3 h-3 flex items-center justify-center border border-slate-900">
+                ${cell.flaggedLayers}
+            </span>`;
+
+        flagEffect(r,c);
+
+        soundFlag();
+
+    } else {
+
+        cell.flaggedLayers = 0;
+
+        dom.innerHTML = "";
 
         const pos =
             getTileCenter(r,c);
@@ -2032,367 +1962,391 @@
             burstParticles(
                 pos.x,
                 pos.y,
-                32,
-                'flag'
-            );
-
-            setTimeout(
-                () => {
-
-                    burstParticles(
-                        pos.x,
-                        pos.y,
-                        22,
-                        'flag'
-                    );
-
-                },
-                100
+                7,
+                "flag"
             );
         }
 
-        /*
-         * Reveal the whole board so the player
-         * can see what went wrong.
-         */
+        soundUnflag();
+    }
+
+    const activeFlags =
         dataGrid
             .flatMap(row => row)
-            .forEach(tile => {
+            .reduce(
+                (acc,curr) =>
+                    acc + curr.flaggedLayers,
+                0
+            );
+
+    document.getElementById(
+        "minesTxt"
+    ).textContent =
+        Math.max(
+            0,
+            mineQuota - activeFlags
+        );
+
+    lucide.createIcons();
+
+    evalStatus();
+}
+
+/* =========================================================
+   WRONG CHORD / GAME OVER
+   ========================================================= */
+
+function chordMistake(r,c) {
+
+    if(over)
+        return;
+
+    over = true;
+
+    clearInterval(clock);
+
+    soundWrong();
+
+    shakeScreen(true);
+
+    const pos =
+        getTileCenter(r,c);
+
+    if(pos) {
+
+        burstParticles(
+            pos.x,
+            pos.y,
+            32,
+            "flag"
+        );
+
+        setTimeout(() => {
+
+            burstParticles(
+                pos.x,
+                pos.y,
+                22,
+                "flag"
+            );
+
+        },100);
+    }
+
+    dataGrid
+        .flatMap(row => row)
+        .forEach(tile => {
+
+            const dom =
+                document.getElementById(
+                    `cell-${tile.row}-${tile.col}`
+                );
+
+            if(tile.mines > 0) {
+
+                dom.classList.add(
+                    "revealed"
+                );
+
+                dom.innerHTML =
+                    `<div class="flex items-center text-red-500 gap-0.5">
+
+                        <i
+                            data-lucide="bomb"
+                            class="w-3 h-3">
+                        </i>
+
+                        <span class="text-[8px] font-black">
+                            ${tile.mines}
+                        </span>
+
+                    </div>`;
+            }
+
+            if(
+                tile.flaggedLayers > 0 &&
+                tile.flaggedLayers !== tile.mines
+            ) {
+
+                dom.style.backgroundColor =
+                    "#450a0a";
+
+                const tilePos =
+                    getTileCenter(
+                        tile.row,
+                        tile.col
+                    );
+
+                if(tilePos) {
+
+                    burstParticles(
+                        tilePos.x,
+                        tilePos.y,
+                        12,
+                        "flag"
+                    );
+                }
+            }
+        });
+
+    lucide.createIcons();
+
+    setTimeout(
+        () =>
+            alert(
+                "WRONG FLAGS! Game Over."
+            ),
+        80
+    );
+}
+
+/* =========================================================
+   MINE EXPLOSION
+   ========================================================= */
+
+function detonateBoard(blownR,blownC) {
+
+    over = true;
+
+    clearInterval(clock);
+
+    soundExplosion();
+
+    dataGrid
+        .flatMap(row => row)
+        .forEach(tile => {
+
+            if(tile.mines > 0) {
 
                 const dom =
                     document.getElementById(
                         `cell-${tile.row}-${tile.col}`
                     );
 
-                if(tile.mines > 0) {
+                dom.classList.add(
+                    "revealed"
+                );
 
-                    dom.classList.add(
-                        'revealed'
-                    );
+                dom.innerHTML =
+                    `<div class="flex items-center text-red-500 gap-0.5">
 
-                    dom.innerHTML =
-                        `<div class="flex items-center text-red-500 gap-0.5">
+                        <i
+                            data-lucide="bomb"
+                            class="w-3 h-3">
+                        </i>
 
-                            <i
-                                data-lucide="bomb"
-                                class="w-3 h-3">
-                            </i>
+                        <span class="text-[8px] font-black">
+                            ${tile.mines}
+                        </span>
 
-                            <span class="text-[8px] font-black">
-                                ${tile.mines}
-                            </span>
+                    </div>`;
 
-                        </div>`;
-                }
-
-                /*
-                 * Incorrectly flagged tiles get
-                 * a red background and particle burst.
-                 */
                 if(
-                    tile.flaggedLayers > 0 &&
-                    tile.flaggedLayers !== tile.mines
+                    tile.row === blownR &&
+                    tile.col === blownC
                 ) {
 
                     dom.style.backgroundColor =
-                        '#450a0a';
+                        "#450a0a";
 
-                    const tilePos =
+                    const pos =
                         getTileCenter(
                             tile.row,
                             tile.col
                         );
 
-                    if(tilePos) {
+                    if(pos) {
 
                         burstParticles(
-                            tilePos.x,
-                            tilePos.y,
-                            12,
-                            'flag'
+                            pos.x,
+                            pos.y,
+                            30,
+                            "flag"
                         );
+
+                        setTimeout(() => {
+
+                            burstParticles(
+                                pos.x,
+                                pos.y,
+                                25,
+                                "flag"
+                            );
+
+                        },100);
                     }
                 }
-            });
+            }
+        });
 
-        lucide.createIcons();
+    lucide.createIcons();
 
-        setTimeout(
-            () =>
-                alert(
-                    "WRONG FLAGS! Game Over."
-                ),
-            80
+    shakeScreen(true);
+
+    setTimeout(
+        () =>
+            alert(
+                "EXPLOSION! Game Over."
+            ),
+        50
+    );
+}
+
+/* =========================================================
+   VICTORY / PROGRESS
+   ========================================================= */
+
+function evalStatus() {
+
+    if(over)
+        return;
+
+    const totalSafe =
+        (boardW * boardH) -
+        dataGrid
+            .flatMap(r => r)
+            .filter(t => t.mines > 0)
+            .length;
+
+    const clearedSafe =
+        dataGrid
+            .flatMap(r => r)
+            .filter(
+                t =>
+                    t.uncovered &&
+                    t.mines === 0
+            )
+            .length;
+
+    let authenticFlags = 0;
+
+    dataGrid
+        .flatMap(r => r)
+        .forEach(t => {
+
+            if(
+                t.mines > 0 &&
+                t.flaggedLayers ===
+                t.mines
+            ) {
+
+                authenticFlags +=
+                    t.mines;
+            }
+        });
+
+    const safeRatio =
+        totalSafe > 0
+            ? clearedSafe / totalSafe * 50
+            : 50;
+
+    const flagRatio =
+        mineQuota > 0
+            ? authenticFlags / mineQuota * 50
+            : 50;
+
+    let score =
+        Math.floor(
+            safeRatio +
+            flagRatio
         );
-    }
 
+    if(score > 100)
+        score = 100;
 
-    /* ==========================================
-       EXPLOSION
-    ========================================== */
+    if(
+        score === 100 &&
+        !verifyVictoryState()
+    )
+        score = 99;
 
-    function detonateBoard(
-        blownR,
-        blownC
-    ) {
+    document.getElementById(
+        "progTxt"
+    ).textContent =
+        `${score}%`;
+
+    if(verifyVictoryState()) {
 
         over = true;
 
         clearInterval(clock);
 
-        dataGrid
-            .flatMap(row => row)
-            .forEach(tile => {
+        document.getElementById(
+            "progTxt"
+        ).textContent = "100%";
 
-                if(tile.mines > 0) {
-
-                    const dom =
-                        document.getElementById(
-                            `cell-${tile.row}-${tile.col}`
-                        );
-
-                    dom.classList.add(
-                        'revealed'
-                    );
-
-                    dom.innerHTML =
-                        `<div class="flex items-center text-red-500 gap-0.5">
-
-                            <i
-                                data-lucide="bomb"
-                                class="w-3 h-3">
-                            </i>
-
-                            <span class="text-[8px] font-black">
-                                ${tile.mines}
-                            </span>
-
-                        </div>`;
-
-                    if(
-                        tile.row === blownR &&
-                        tile.col === blownC
-                    ) {
-
-                        dom.style.backgroundColor =
-                            '#450a0a';
-
-                        const pos =
-                            getTileCenter(
-                                tile.row,
-                                tile.col
-                            );
-
-                        if(pos) {
-
-                            burstParticles(
-                                pos.x,
-                                pos.y,
-                                30,
-                                'flag'
-                            );
-
-                            setTimeout(
-                                () => {
-
-                                    burstParticles(
-                                        pos.x,
-                                        pos.y,
-                                        25,
-                                        'flag'
-                                    );
-
-                                },
-                                100
-                            );
-                        }
-                    }
-                }
-            });
-
-        lucide.createIcons();
+        soundVictory();
 
         shakeScreen(true);
 
         setTimeout(
             () =>
                 alert(
-                    "EXPLOSION! Game Over."
+                    `VICTORY SECURED! Completed in ${elapsed} seconds!`
                 ),
-            50
+            450
         );
     }
+}
 
+function verifyVictoryState() {
 
-    /* ==========================================
-       WIN
-    ========================================== */
+    return dataGrid
+        .flatMap(r => r)
+        .every(tile => {
 
-    function evalStatus() {
-
-        if(over)
-            return;
-
-        const totalSafe =
-            (boardW * boardH) -
-            dataGrid
-                .flatMap(r => r)
-                .filter(
-                    t => t.mines > 0
-                )
-                .length;
-
-        const clearedSafe =
-            dataGrid
-                .flatMap(r => r)
-                .filter(
-                    t =>
-                        t.uncovered &&
-                        t.mines === 0
-                )
-                .length;
-
-        let authenticFlags = 0;
-
-        dataGrid
-            .flatMap(r => r)
-            .forEach(t => {
-
-                if(
-                    t.mines > 0 &&
-                    t.flaggedLayers ===
-                    t.mines
-                ) {
-
-                    authenticFlags +=
-                        t.mines;
-                }
-            });
-
-        const safeRatio =
-            totalSafe > 0
-                ? (
-                    clearedSafe /
-                    totalSafe
-                ) * 50
-                : 50;
-
-        const flagRatio =
-            mineQuota > 0
-                ? (
-                    authenticFlags /
-                    mineQuota
-                ) * 50
-                : 50;
-
-        let score =
-            Math.floor(
-                safeRatio +
-                flagRatio
-            );
-
-        if(score > 100)
-            score = 100;
-
-        if(
-            score === 100 &&
-            !verifyVictoryState()
-        )
-            score = 99;
-
-        document.getElementById(
-            'progTxt'
-        ).textContent =
-            `${score}%`;
-
-        if(
-            verifyVictoryState()
-        ) {
-
-            over = true;
-
-            clearInterval(clock);
-
-            document.getElementById(
-                'progTxt'
-            ).textContent =
-                "100%";
-
-            shakeScreen(true);
-
-            setTimeout(
-                () =>
-                    alert(
-                        `VICTORY SECURED! Completed in ${elapsed} seconds!`
-                    ),
-                50
-            );
-        }
-    }
-
-
-    function verifyVictoryState() {
-
-        return dataGrid
-            .flatMap(r => r)
-            .every(tile => {
-
-                if(tile.mines === 0) {
-
-                    return (
-                        tile.uncovered &&
-                        tile.flaggedLayers === 0
-                    );
-                }
+            if(tile.mines === 0) {
 
                 return (
-                    tile.flaggedLayers ===
-                    tile.mines
+                    tile.uncovered &&
+                    tile.flaggedLayers === 0
                 );
-            });
-    }
+            }
 
-
-    /* ==========================================
-       THEME
-    ========================================== */
-
-    function switchTheme() {
-
-        const body =
-            document.body;
-
-        const choice =
-            document
-                .getElementById(
-                    'themeSelect'
-                )
-                .value;
-
-        if(choice === 'modern') {
-
-            body.classList.remove(
-                'classic-theme'
+            return (
+                tile.flaggedLayers ===
+                tile.mines
             );
+        });
+}
 
-        } else {
+/* =========================================================
+   THEME
+   ========================================================= */
 
-            body.classList.add(
-                'classic-theme'
-            );
-        }
+function switchTheme() {
+
+    const body =
+        document.body;
+
+    const choice =
+        document.getElementById(
+            "themeSelect"
+        ).value;
+
+    if(choice === "modern") {
+
+        body.classList.remove(
+            "classic-theme"
+        );
+
+    } else {
+
+        body.classList.add(
+            "classic-theme"
+        );
     }
+}
 
+/* =========================================================
+   START
+   ========================================================= */
 
-    /* ==========================================
-       START
-    ========================================== */
+window.onload = () => {
 
-    window.onload = () => {
+    resetEngine();
 
-        resetEngine();
-
-    };
+};
 
 </script>
 
