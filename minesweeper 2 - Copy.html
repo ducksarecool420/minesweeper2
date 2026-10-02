@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minesweeper 2: Multi-Mine Mayhem</title>
+    <!-- Tailwind CSS for rapid component structure alignment -->
+    <script src="https://cdn.jsdelivr.net/npm/tailwindcss-cdn@3.4.10/tailwindcss.js"></script>
+    <!-- Lucide for pristine SVG layout icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --bg-main: #0b0f19;       
+            --panel-bg: #111827;     
+            --tile-closed: #162235;  
+            --tile-border: transparent; 
+            --tile-open: #0d131f;    
+            --text-main: #f8fafc;
+            --radius-main: 16px;
+            --radius-tile: 8px;
+            --font-main: system-ui, -apple-system, sans-serif;
+        }
+
+        .classic-theme {
+            --bg-main: #4a4a4a;
+            --panel-bg: #bdbdbd;
+            --tile-closed: #bdbdbd;
+            --tile-border: #7b7b7b;
+            --tile-open: #bdbdbd;
+            --text-main: #000000;
+            --radius-main: 0px;
+            --radius-tile: 0px;
+            --font-main: "Courier New", Courier, monospace;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            font-family: var(--font-main);
+            transition: all 0.2s ease;
+        }
+
+        .app-window {
+            background-color: var(--panel-bg);
+            border-radius: var(--radius-main);
+            border: 1px solid rgba(255,255,255,0.05);
+            width: max-content;
+            max-width: 100%;
+        }
+
+        .count-1 { color: #3b82f6; font-weight: 800; }
+        .count-2 { color: #10b981; font-weight: 800; }
+        .count-3 { color: #f59e0b; font-weight: 800; }
+        .count-4 { color: #818cf8; font-weight: 800; }
+        .count-5 { color: #f43f5e; font-weight: 800; }
+        .count-6 { color: #2dd4bf; font-weight: 800; }
+        .count-7 { color: #ec4899; font-weight: 800; } 
+        .count-8 { color: #a855f7; font-weight: 800; }
+        .count-boss { color: #ef4444; font-weight: 900; animation: flashRed 1.5s infinite; }
+
+        @keyframes flashRed {
+            0%, 100% { color: #ef4444; transform: scale(1); }
+            50% { color: #f43f5e; transform: scale(1.05); }
+        }
+
+        .game-tile {
+            width: var(--tileSize, 36px);
+            height: var(--tileSize, 36px);
+            background-color: var(--tile-closed);
+            border: 1.5px solid var(--tile-border);
+            border-radius: var(--radius-tile);
+            transition: all 0.15s ease;
+            user-select: none;
+            flex-shrink: 0;
+            font-size: calc(var(--tileSize, 36px) * 0.45);
+        }
+
+        .game-tile:hover:not(.revealed) {
+            background-color: #1d2d47;
+        }
+
+        .game-tile.revealed {
+            background-color: var(--tile-open);
+            border-color: rgba(255,255,255,0.02);
+        }
+
+        .classic-theme .game-tile:not(.revealed) {
+            border: 2.5px solid;
+            border-color: #fff #4a4a4a #4a4a4a #fff;
+        }
+        .classic-theme .game-tile.revealed {
+            border: 1px solid #7b7b7b;
+        }
+        .classic-theme .count-1, .classic-theme .count-2, .classic-theme .count-3, 
+        .classic-theme .count-4, .classic-theme .count-5, .classic-theme .count-6 {
+            color: #000000 !important;
+        }
+        .classic-theme input, .classic-theme select, .classic-theme button {
+            border: 2px solid;
+            border-color: #fff #7b7b7b #7b7b7b #fff;
+            background: #bdbdbd !important;
+            color: #000 !important;
+            border-radius: 0px !important;
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen p-2 sm:p-4">
+
+<div class="app-window p-3 sm:p-5 shadow-2xl mx-auto">
+    <!-- Grid Frame Layout Wrapper Box -->
+    <div class="flex justify-center bg-black/20 rounded-2xl p-3 mb-4 border border-white/5 relative">
+        <!-- Floating Refresh Button Top Right -->
+        <button onclick="resetEngine()" class="absolute top-3 right-3 bg-slate-800/80 hover:bg-slate-700 text-white rounded-full p-2 transition border border-white/10 z-10" title="Reset Field">
+            <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+        </button>
+        <div id="gridNode" class="grid gap-1 mt-6"></div>
+    </div>
+
+    <!-- Status Hub Readouts -->
+    <div class="grid grid-cols-4 text-center border-b border-white/10 pb-3 mb-3 text-[11px] font-medium tracking-wide text-slate-400">
+        <div>
+            <div class="text-xs font-bold text-sky-400 mb-1" id="minesTxt">25</div>
+            Mines Left
+        </div>
+        <div>
+            <div class="text-xs font-bold text-pink-400 mb-1 flex items-center justify-center gap-1">👑 <span id="bossTally">9</span></div>
+            Boss Tile
+        </div>
+        <div>
+            <div class="text-xs font-bold text-indigo-400 mb-1"><span id="timerTxt">0</span>s</div>
+            Time
+        </div>
+        <div>
+            <div class="text-xs font-bold text-emerald-400 mb-1" id="progTxt">0%</div>
+            Cleared
+        </div>
+    </div>
+
+    <!-- Control Operations Interface Panels -->
+    <div class="space-y-3">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-semibold">
+            <div>
+                <label class="block text-slate-400 text-[11px] mb-1.5">Difficulty & Grid Size</label>
+                <select id="diffSelect" onchange="onDiffChange()" class="w-full bg-slate-900 border border-slate-700/80 text-white px-3 py-2 rounded-xl outline-none cursor-pointer">
+                    <option value="beginner">Beginner 9x9 (25 mines)</option>
+                    <option value="intermediate">Intermediate 16x16 (100 mines)</option>
+                    <option value="expert">Expert 30x16 (250 mines)</option>
+                    <option value="custom">Custom Configuration...</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-slate-400 text-[11px] mb-1.5">Theme</label>
+                <select id="themeSelect" onchange="switchTheme()" class="w-full bg-slate-900 border border-slate-700/80 text-white px-3 py-2 rounded-xl outline-none cursor-pointer">
+                    <option value="modern">Modern Theme</option>
+                    <option value="classic">Classic Retro Theme</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Hidden Custom Value Block Controls -->
+        <div id="customControls" class="hidden flex-wrap gap-2 items-center justify-between p-2.5 bg-black/30 rounded-xl border border-white/5 text-xs">
+            <label class="font-semibold text-slate-400">W: <input type="number" id="inpW" value="10" min="5" max="35" class="bg-slate-900 text-white rounded-lg p-1 w-12 text-center border border-slate-700"></label>
+            <label class="font-semibold text-slate-400">H: <input type="number" id="inpH" value="10" min="5" max="35" class="bg-slate-900 text-white rounded-lg p-1 w-12 text-center border border-slate-700"></label>
+            <label class="font-semibold text-slate-400">Mines: <input type="number" id="inpM" value="30" min="1" max="300" class="bg-slate-900 text-white rounded-lg p-1 w-14 text-center border border-slate-700"></label>
+            <button onclick="resetEngine()" class="bg-blue-600 hover:bg-blue-500 font-bold text-white px-3 py-1 rounded-lg text-xs">Apply</button>
+        </div>
+
+        <!-- Interactive Lower Action Tool Slider Layout Matrix -->
+        <div class="flex items-center justify-between bg-slate-900/60 p-2 rounded-xl border border-white/5">
+            <span class="text-[11px] font-medium text-slate-400 pl-1">Tool (Tap tile to flag 1x/2x/3x)</span>
+            <div class="flex bg-slate-950 p-1 rounded-lg border border-slate-800">
+                <button id="toolDig" onclick="setActiveTool('dig')" class="px-3 py-1.5 rounded-md font-bold text-xs bg-blue-600 text-white transition-all">Dig</button>
+                <button id="toolFlag" onclick="setActiveTool('flag')" class="px-3 py-1.5 rounded-md font-bold text-xs text-slate-400 hover:text-white transition-all">Flag (1-3)</button>
+            </div>
+        </div>
+
+        <!-- Rules Information Footer Row -->
+        <div class="text-[10px] text-slate-500 leading-relaxed border-t border-white/5 pt-2">
+            <span class="text-slate-400 font-medium">Win condition:</span> Reveal all numbers AND place matching flags on all mines! 
+            <span class="text-indigo-400 font-semibold ml-1">Boss Tiles: 9+ Mines</span>
+        </div>
+    </div>
+</div>
+
+<script>
+    class Cell {
+        constructor(r, c) {
+            this.row = r; this.col = c;
+            this.mines = 0;
+            this.uncovered = false;
+            this.flaggedLayers = 0;
+        }
+    }
+
+    let boardW = 9, boardH = 9, mineQuota = 25;
+    let dataGrid = [], over = false, clock = null, elapsed = 0, pristine = true;
+    let activeTool = 'dig';
+    const presets = { beginner: {w:9, h:9, m:25}, intermediate: {w:16, h:16, m:100}, expert: {w:30, h:16, m:250} };
+
+    function onDiffChange() {
+        const type = document.getElementById('diffSelect').value;
+        const panel = document.getElementById('customControls');
+        if(type === 'custom') {
+            panel.classList.remove('hidden'); panel.classList.add('flex');
+        } else {
+            panel.classList.remove('flex'); panel.classList.add('hidden');
+            boardW = presets[type].w; boardH = presets[type].h; mineQuota = presets[type].m;
+            resetEngine();
+        }
+    }
+
+    function setActiveTool(tool) {
+        activeTool = tool;
+        const digBtn = document.getElementById('toolDig');
+        const flagBtn = document.getElementById('toolFlag');
+        if(tool === 'dig') {
+            digBtn.className = "px-3 py-1.5 rounded-md font-bold text-xs bg-blue-600 text-white transition-all";
+            flagBtn.className = "px-3 py-1.5 rounded-md font-bold text-xs text-slate-400 hover:text-white transition-all";
+        } else {
+            flagBtn.className = "px-3 py-1.5 rounded-md font-bold text-xs bg-blue-600 text-white transition-all";
+            digBtn.className = "px-3 py-1.5 rounded-md font-bold text-xs text-slate-400 hover:text-white transition-all";
+        }
+    }
+
+    function resetEngine() {
+        clearInterval(clock); clock = null; elapsed = 0;
+        document.getElementById('timerTxt').textContent = "0";
+        over = false; pristine = true;
+        if(document.getElementById('diffSelect').value === 'custom') {
+            boardW = Math.max(5, Math.min(parseInt(document.getElementById('inpW').value)||9, 35));
+            boardH = Math.max(5, Math.min(parseInt(document.getElementById('inpH').value)||9, 35));
+            mineQuota = Math.max(1, Math.min(parseInt(document.getElementById('inpM').value)||25, (boardW * boardH * 2)));
+        }
+        document.getElementById('minesTxt').textContent = mineQuota;
+        document.getElementById('progTxt').textContent = "0%";
+        document.getElementById('bossTally').textContent = "9";
+        
+        let targetSize = 38;
+        if (boardW >= 25) targetSize = 26;
+        else if (boardW >= 16) targetSize = 32;
+        document.documentElement.style.setProperty('--tileSize', `${targetSize}px`);
+
+        dataGrid = [];
+        const container = document.getElementById('gridNode');
+        container.innerHTML = '';
+        container.style.gridTemplateColumns = `repeat(${boardW}, var(--tileSize))`;
+        
+        for(let r=0; r<boardH; r++) {
+            dataGrid[r] = [];
+            for(let c=0; c<boardW; c++) {
+                dataGrid[r][c] = new Cell(r, c);
+                const block = document.createElement('div');
+                block.className = "game-tile flex items-center justify-center font-black cursor-pointer relative text-center";
+                block.id = `cell-${r}-${c}`;
+                block.addEventListener('click', () => {
+                    if(activeTool === 'dig') triggerLeft(r, c);
+                    else triggerRight(r, c);
+                });
+                block.addEventListener('contextmenu', (e) => { e.preventDefault(); triggerRight(r, c); });
+                container.appendChild(block);
+            }
+        }
+        lucide.createIcons();
+    }
+
+    function deployMines(safeR, safeC) {
+        let seeded = 0;
+        let peakProx = 0;
+        while(seeded < mineQuota) {
+            const r = Math.floor(Math.random() * boardH);
+            const c = Math.floor(Math.random() * boardW);
+            // Ensure first click area and its immediate surroundings stay clear/safe to allow a massive opening cascade
+            if(Math.abs(r - safeR) <= 1 && Math.abs(c - safeC) <= 1) continue;
+            if(dataGrid[r][c].mines < 3) {
+                dataGrid[r][c].mines++;
+                seeded++;
+            }
+        }
+        for(let r=0; r<boardH; r++) {
+            for(let c=0; c<boardW; c++) {
+                if(dataGrid[r][c].mines === 0) {
+                    let p = calcProx(r, c);
+                    if(p > peakProx) peakProx = p;
+                }
+            }
+        }
+        document.getElementById('bossTally').textContent = peakProx >= 9 ? peakProx : "9";
+    }
+
+    function initClock() {
+        clock = setInterval(() => { elapsed++; document.getElementById('timerTxt').textContent = elapsed; }, 1000);
+    }
+
+    function triggerLeft(r, c) {
+        if(over) return;
+        let cell = dataGrid[r][c];
+        if(cell.uncovered || cell.flaggedLayers > 0) return;
+        if(pristine) {
+            pristine = false;
+            deployMines(r, c);
+            initClock();
+        }
+        if(cell.mines > 0) { detonateBoard(r, c); return; }
+        
+        // Massive expanding cascade opening behavior restored!
+        exposeChain(r, c);
+        evalStatus();
+    }
+
+    function exposeChain(r, c) {
+        let cell = dataGrid[r][c];
+        if(cell.uncovered || cell.flaggedLayers > 0) return;
+        cell.uncovered = true;
+        const dom = document.getElementById(`cell-${r}-${c}`);
+        dom.classList.add('revealed');
+        let proxCount = calcProx(r, c);
+        if(proxCount > 0) {
+            dom.textContent = proxCount;
+            dom.className += proxCount >= 9 ? " count-boss" : ` count-${proxCount}`;
+        } else {
+            for(let dr=-1; dr<=1; dr++) {
+                for(let dc=-1; dc<=1; dc++) {
+                    let nr = r + dr, nc = c + dc;
+                    if(nr >= 0 && nr < boardH && nc >= 0 && nc < boardW) exposeChain(nr, nc);
+                }
+            }
+        }
+    }
+
+    function calcProx(r, c) {
+        let total = 0;
+        for(let dr=-1; dr<=1; dr++) {
+            for(let dc=-1; dc<=1; dc++) {
+                let nr = r + dr, nc = c + dc;
+                if(nr >= 0 && nr < boardH && nc >= 0 && nc < boardW) total += dataGrid[nr][nc].mines;
+            }
+        }
+        return total;
+    }
+
+    function triggerRight(r, c) {
+        if(over) return;
+        let cell = dataGrid[r][c];
+        if(cell.uncovered) return;
+        const dom = document.getElementById(`cell-${r}-${c}`);
+        if(cell.flaggedLayers < 3) {
+            cell.flaggedLayers++;
+            dom.innerHTML = `<i data-lucide="flag" class="w-3.5 h-3.5 text-red-500 fill-red-500"></i> <span class="absolute -top-1 -right-1 bg-red-600 text-white rounded-full font-bold text-[7px] w-3 h-3 flex items-center justify-center border border-slate-900">${cell.flaggedLayers}</span>`;
+        } else {
+            cell.flaggedLayers = 0;
+            dom.innerHTML = '';
+        }
+        let activeFlags = dataGrid.flatMap(row => row).reduce((acc, curr) => acc + curr.flaggedLayers, 0);
+        document.getElementById('minesTxt').textContent = Math.max(0, mineQuota - activeFlags);
+        lucide.createIcons();
+        evalStatus();
+    }
+
+    function evalStatus() {
+        let totalSafe = (boardW * boardH) - dataGrid.flatMap(r=>r).filter(t=>t.mines>0).length;
+        let clearedSafe = dataGrid.flatMap(r=>r).filter(t=>t.uncovered && t.mines===0).length;
+        let authenticFlags = 0;
+        dataGrid.flatMap(r=>r).forEach(t => {
+            if(t.mines > 0 && t.flaggedLayers === t.mines) authenticFlags += t.mines;
+        });
+        let safeRatio = totalSafe > 0 ? (clearedSafe / totalSafe) * 50 : 50;
+        let flagRatio = mineQuota > 0 ? (authenticFlags / mineQuota) * 50 : 50;
+        let score = Math.floor(safeRatio + flagRatio);
+        if(score > 100) score = 100;
+        if(score === 100 && !verifyVictoryState()) score = 99;
+        document.getElementById('progTxt').textContent = `${score}%`;
+        if(verifyVictoryState()) {
+            over = true; clearInterval(clock);
+            document.getElementById('progTxt').textContent = "100% 😎";
+            setTimeout(() => alert(`👑 VICTORY SECURED! Completed in ${elapsed} seconds! 👑`), 50);
+        }
+    }
+
+    function verifyVictoryState() {
+        return dataGrid.flatMap(r=>r).every(t => {
+            if(t.mines === 0) return t.uncovered && t.flaggedLayers === 0;
+            return t.flaggedLayers === t.mines;
+        });
+    }
+
+    function detonateBoard(blownR, blownC) {
+        over = true; clearInterval(clock);
+        dataGrid.flatMap(r=>r).forEach(t => {
+            if(t.mines > 0) {
+                const dom = document.getElementById(`cell-${t.row}-${t.col}`);
+                dom.classList.add('revealed');
+                dom.innerHTML = `<div class="flex items-center text-red-500 gap-0.5"><i data-lucide="bomb" class="w-3 h-3"></i><span class="text-[8px] font-black">${t.mines}</span></div>`;
+                if(t.row === blownR && t.col === blownC) dom.style.backgroundColor = '#450a0a';
+            }
+        });
+        lucide.createIcons();
+        setTimeout(() => alert("💥 EXPLOSION! Game Over. 💥"), 50);
+    }
+
+    function switchTheme() {
+        const body = document.body;
+        const choice = document.getElementById('themeSelect').value;
+        if(choice === 'modern') body.classList.remove('classic-theme');
+        else body.classList.add('classic-theme');
+    }
+
+    window.onload = () => { resetEngine(); };
+</script>
+
+</body>
+</html>
